@@ -1,0 +1,168 @@
+setup:
+  inst: |-
+    You will parse user commands and emit actions to control the state of a system, which is listed after "STATE:"
+    The system has 4 elements named A, B, C, D, which can be set to a level between 0 and 9, where level 0 means off, while level 9 means maximum or full.
+    If the user requests a non-existent element (not one of A, B, C, D), emit a special action setting any element to special level -1.
+    If the user requests a level which is not between 0 and 9, emit a special action setting any element to special level -1.
+    For example: 
+    - if the user enters "set element A to level 7", you should emit an action with element=A, level=7
+    - if the user enters "set element H to level 4", you should emit an action with element=A, level=-1, because H is not a valid element
+    - if the user enters "set element B to level 16", you should emit an action setting element=A, level=-2, because level 16 is outside 0-9 range
+    
+  script: |
+    from typing import Any, Optional, Union, Literal
+    from pydantic import BaseModel, Field
+    
+    Element = Literal["A","B","C","D"]
+    
+    class Action(BaseModel):
+        #thinking: str = Field(description="Reasoning behind the action")
+        element: Element = Field(description="Element to set")
+        level: int = Field(description="Level to set, between 0 and 9, or special level -1")
+    
+    def generate(model, inst_text, in_text):
+        return model.extract(list[Action], in_text, inst=inst_text)
+
+    def evaluate(value: Action, expected: dict):
+        sub_scores = []
+
+        for field in expected:
+             score = getattr(value,field) == expected[field]
+             sub_scores.append(float(score))
+
+        return sum(sub_scores) / len(sub_scores)
+          
+        
+  vars:
+    off_state: {'A': 0, 'B': 0, 'C': 0, 'D': 0}
+    valid_element*: ["A","B","C","D"]
+    valid_element_exA*: ["B","C","D"]
+    invalid_element*: ["E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","X","Y","W","Z"]
+    valid_level*: [0,1,2,3,4,5,6,7,8,9]
+    invalid_level*: [10,11,12,13,14,15,24,36,41,59,67,73,84,99,563,999,-1,-5,-20]
+
+tests:
+  # individual direct sets
+  - in: |-
+      STATE: {off_state}
+      Set {valid_element*} to {valid_level*}
+    expected:
+      element: "valid_element*"
+      level: "valid_level*"
+
+  - in: |-
+      STATE: {off_state}
+      Set element {valid_element*} to level {valid_level*}
+    expected:
+      element: "valid_element*"
+      level: "valid_level*"
+
+  - in: |-
+      STATE: {off_state}
+      Set {invalid_element*} to {valid_level*}
+    expected:
+      level: "-1" # direct value for comparision
+
+  - in: |-
+      STATE: {off_state}
+      Set {valid_element*} to {invalid_level*}
+    expected:
+      level: "-1"
+
+
+  # turn off / set to full
+  - in: |-
+      STATE: {'A': 5, 'B': 3, 'C': 8, 'D': 6}
+      Switch off element {valid_element*}
+    expected:
+      element: "valid_element*"
+      level: "0"
+
+  - in: |-
+      STATE: {'A': 5, 'B': 3, 'C': 8, 'D': 6}
+      Set element {valid_element*} to full
+    expected:
+      element: "valid_element*"
+      level: "9"
+
+  
+  # same level as other element
+  - in: |-
+      STATE: {'A': {valid_level*}, 'B': 0, 'C': 0, 'D': 0}
+      Set element {valid_element*} to same level as element A
+    expected:
+      element: "valid_element*"
+      level: "valid_level*"
+
+  - in: |-
+      STATE: {'A': 0, 'B': {valid_level*}, 'C': 0, 'D': 0}
+      Set element {valid_element*} to same level as element B
+    expected:
+      element: "valid_element*"
+      level: "valid_level*"
+
+  - in: |-
+      STATE: {'A': 0, 'B': 0, 'C': {valid_level*}, 'D': 0}
+      Set element {valid_element*} to same level as element C
+    expected:
+      element: "valid_element*"
+      level: "valid_level*"
+
+  - in: |-
+      STATE: {'A': 0, 'B': 0, 'C': 0, 'D': {valid_level*}}
+      Set element {valid_element*} to same level as element D
+    expected:
+      element: "valid_element*"
+      level: "valid_level*"
+
+
+  # same level as other element - invalid element
+  - in: |-
+      STATE: {'A': {valid_level*}, 'B': 0, 'C': 0, 'D': 0}
+      Set element {invalid_element*} to same level as element A
+    expected:
+      level: "-1"
+
+
+  # set all to level
+  - in: |-
+      STATE: {off_state}
+      Set all elements to {valid_level*}
+    expected:
+      - element: "A"
+        level: "valid_level*"
+      - element: "B"
+        level: "valid_level*"
+      - element: "C"
+        level: "valid_level*"
+      - element: "D"
+        level: "valid_level*"
+
+
+  - in: |-
+      STATE: {off_state}
+      Set A and B to {valid_level*}
+    expected:
+      - element: "A"
+        level: "valid_level*"
+      - element: "B"
+        level: "valid_level*"
+
+  - in: |-
+      STATE: {off_state}
+      Set A and {valid_element_exA*} to {valid_level*}
+    expected:
+      - element: "A"
+        level: "valid_level*"
+      - element: "valid_element_exA*"
+        level: "valid_level*"
+
+
+
+#
+#
+#
+#
+#
+#
+#
