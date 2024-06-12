@@ -79,7 +79,7 @@ tests: # the actual test input (aka user prompt):
 
 ```
 
-To test local GGUF models (llama.cpp based) place the files in a "models" folder. Or use any remote models supported by Sibila.
+To test local GGUF models (llama.cpp based) place the files in a "models" folder. Or use any remote models (OpenAI, Anthropic, Mistral, etc) supported by Sibila.
 
 Run the test from the YAML config:
 
@@ -144,9 +144,9 @@ Incorrect answers per model:
 
 ## To do
 
-- Load variables from files.
-- Threads as input.
+- Load driving variables from files.
+- Accept message threads as input.
 - An HTML results viewer.
 - Results caching and persistence.
-- Document compare functions.
+- Document the compare functions.
 
