@@ -2,7 +2,27 @@
 
 This is a simple way to test an LLM from combinations of prompts and expected results.
 
-Requires [Sibila](https://github.com/jndiogo/sibila) to access local and remote LLMs. Install Sibila with:
+For example, suppose you'd want test a situation where a model would extract element and level information from input prompts like this:
+
+```
+Set element {valid_element*} to level {valid_level*}
+```
+
+If we'd define variable {valid_element*} to be one of A,B,C,D and {valid_level*} to be a number from 0 to 9, we could then use Combi-tester to see if the model correctly extracted all combinations like:
+
+```
+Set element A to level 0 -> element=A level=0
+Set element A to level 1 -> element=A level=1
+Set element A to level 2 -> element=A level=2
+...
+Set element B to level 0 -> element=B level=0
+... and so on ...
+```
+
+In this manner we can measure LLM models' output, test different prompts, system instructions, etc.
+
+
+Combi-tester requires [Sibila](https://github.com/jndiogo/sibila) to access local and remote LLMs. Install Sibila with:
 
 ```
 pip install --upgrade sibila
